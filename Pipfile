@@ -1,0 +1,28 @@
+[[source]]
+
+url = "https://pypi.python.org/simple"
+name = "pypi"
+verify_ssl = true
+
+
+[requires]
+
+python_version = "3.6"
+
+
+[packages]
+
+
+
+[dev-packages]
+
+stem = "*"
+scrapy = "*"
+lxml = "*"
+pymongo = "*"
+selenium = "*"
+cython = "*"
+lsm-db = "*"
+"html2text" = "*"
+ipdb = "*"
+dateutils = "*"
