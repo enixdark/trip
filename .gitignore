@@ -1,7 +1,10 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+<<<<<<< HEAD
+=======
 *$py.class
+>>>>>>> 0553a864f18f9e345a3d7d62d5d5c89e36d64114
 
 # C extensions
 *.so
@@ -20,7 +23,10 @@ lib64/
 parts/
 sdist/
 var/
+<<<<<<< HEAD
+=======
 wheels/
+>>>>>>> 0553a864f18f9e345a3d7d62d5d5c89e36d64114
 *.egg-info/
 .installed.cfg
 *.egg
@@ -43,8 +49,12 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+<<<<<<< HEAD
+*,cover
+=======
 *.cover
 .hypothesis/
+>>>>>>> 0553a864f18f9e345a3d7d62d5d5c89e36d64114
 
 # Translations
 *.mo
@@ -52,6 +62,10 @@ coverage.xml
 
 # Django stuff:
 *.log
+<<<<<<< HEAD
+*.swp
+*.swo
+=======
 local_settings.py
 
 # Flask stuff:
@@ -61,10 +75,14 @@ instance/
 # Scrapy stuff:
 .scrapy
 
+>>>>>>> 0553a864f18f9e345a3d7d62d5d5c89e36d64114
 # Sphinx documentation
 docs/_build/
 
 # PyBuilder
+<<<<<<< HEAD
+target/
+=======
 target/
 
 # Jupyter Notebook
@@ -99,3 +117,4 @@ ENV/
 
 # mypy
 .mypy_cache/
+>>>>>>> 0553a864f18f9e345a3d7d62d5d5c89e36d64114
