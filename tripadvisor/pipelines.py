@@ -13,17 +13,19 @@ from .middlewares import LSMEngine
 
 class TripadvisorPipeline(object):
     def __init__(self):
-        connection = MongoClient(settings.get('MONGODB_URI'))
-        db = connection[settings['MONGODB_DATABASE']]
+        self.connection = MongoClient(settings.get('MONGODB_URI'))
+        self.db = connection[settings['MONGODB_DATABASE']]
         # db.authenticate(settings['MONGODB_USERNAME'], settings['MONGODB_PASSWORD'])
-        self.collection = db[settings['CRAWLER_COLLECTION']]
+        # self.collection = db[settings['CRAWLER_COLLECTION_TOPIC']]
 
     def process_item(self, item, spider):
+        import ipdb; ipdb.set_trace()
         data = dict(item)
         
         if data['url'] not in LSMEngine.db:
-            LSMEngine.db[data['url']] = True
-            self.collection.insert(data)
+            pass
+            # LSMEngine.db[data['url']] = True
+            # self.collection.insert(data)
         
         return item
 

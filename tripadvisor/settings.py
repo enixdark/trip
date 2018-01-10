@@ -118,7 +118,9 @@ DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 LOG_FILE = f'./logs/tripadvisor-{datetime.now()}.log'
 
 CRAWLER_DOMAIN='www.tripadvisor.com'
-CRAWLER_COLLECTION = 'crawler.tripadvisor.com'
+CRAWLER_COLLECTION_FORUM = 'forum'
+CRAWLER_COLLECTION_TOPIC = 'topic'
+
 
 FEED_EXPORT_ENCODING = 'utf-8'
 

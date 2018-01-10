@@ -17,6 +17,8 @@ import datetime
 from dateutil import parser
 import logging  
 import re 
+from ..utils.enum import PostType
+
 logger = logging.getLogger()
 
 ORIGIN_DOMAIN = 'https://www.tripadvisor.com'
@@ -24,35 +26,27 @@ REGEX_ID = re.compile('g\d+-i\d+-(k\d+)?', re.IGNORECASE | re.MULTILINE)
 
 # re.sub(r'(i|k|g)','', r.search(x).group()).stri
 
-class TripSpider(CrawlSpider):
-    name            = "TripSpider"
+class TripTopicSpider(CrawlSpider):
+    name            = "TripTopicSpider"
     allowed_domains = ["www.tripadvisor.com"]
     
     start_urls = [
-		'https://www.tripadvisor.com/ShowForum-g293921-i8432-Vietnam.html',
+		'https://www.tripadvisor.com/ShowTopic-g293921-i8432-k10867350-o10-Vietnam_Trip_Reports_JBRs_Please_post_here-Vietnam.html#postreply',
 	]
     
 
     __queue = [
         'https://www.tripadvisor.com/ShowTopic-g293921-i8432-k11082870-PLEASE_READ_Forum_Guidelines_Updated-Vietnam.html'
-        r'ShowTopic[-.?=\w\/]+.html'
 	]
     
     
     rules = [
 	    Rule(
 	    	LinkExtractor(allow=(
-	    		r'ShowForum[-.?=\w\/]+.html',
+	    		# r'ShowForum[-.?=\w\/]+.html',
                 r'ShowTopic[-.?=\w\/]+.html',
 	    	), deny=__queue,
                 restrict_xpaths=[
-                    # r'//div[6]/section[1]/div/div/div/div[2]/div/div[3]',
-                    # r'//div[6]/section[1]/div/div/div/div[2]/div',
-                    # r'//div[6]/section[2]/div/div/div/div/div[1]/div[1]/div/div/div[1]',
-                    # r'//div[6]/section[2]/div/div/div/div/div[1]/div[3]/div/div/div/div[3]/div/div/div[3]/div',
-                    # r'//div[6]/section[2]/div/div/div/div/div[1]/div[3]/div/div/div/div[3]/div/div/div[4]',
-                    # r'//div[6]/section[2]/div/div/div/div/div[1]/div[3]/div/div/div/div[4]/div',
-                    # r'//div[6]/section[2]/div/div/div/div/div[1]/div[4]/div/div'
                 ]), 
 	    	    callback='parse_extract_forum', follow=True
 	    	)
@@ -66,17 +60,37 @@ class TripSpider(CrawlSpider):
 			# return re.sub(r"\s+", "", ''.join(text).strip(), flags=re.UNICODE)
         except Exception as e:
             raise Exception("Invalid XPath: %s" % e)
+
+    def _create_topic_item(self, url, type, data):
+        item = TripadvisorForumItem()
+        item['type'] = type
+        item['url'] = url
+        profile = data.select(".//div[@class='profile']")
+        item['location'] = ''.join(profile.select(".//div[contains(@class, 'username')]").extract()).strip()
+        item['post_username'] = ''.join(profile.select(".//div[@class='username']//text()").extract()).strip()
+        item['level'] = ''.join(profile.select(".//div[contains(@class, 'levelBadge')]").css('div::attr(class)').extract()).split('lvl_').pop()).lstrip('0')
+        item['total_post'] = ''.join(''.join(data.select(".//div[contains(@class, 'postBadge')]//span//text()").extract()).split('posts')).strip(' ')
+        item['total_review'] = ''.join(''.join(data.select(".//div[contains(@class, 'reviewerBadge')]//span//text()").extract()).split('reviews')).strip(' ')
+        comment = data.select(".//div[contains(@class, 'postRightContent')]")
+        item['created_at'] = parser.parse(''.join(comment.select(".//div[contains(@class, 'postDate')]/text()").extract()))
+        item['comment'] = ''.join(comment.select(".//div[contains(@class, 'postBody')]//text()").extract())
+        item['topic_id'] = re.sub(r'(i|k|g)','', REGEX_ID.search(url).group()).strip('-')
+        return item
     
     def parse_extract_topic(self, response):
         try:
-            pass
+            first_comment = response.xpath("//div[@class='firstPostBox']").pop()
+            if first_comment:
+                yield self._create_topic_item(response.url, PostType.CREATE, first_comment)
+            comments = response.xpath("//div[contains(@class, 'post ') and not(contains(@class,'firstReply'))]")
+            for comment in comments:
+                yield self._create_topic_item(response.url, PostType.REPLY, comment)
         except Exception as e:
             logger.warning(e)
     
     def parse_extract_forum(self, response):
         try:
-            sel = response
-            list_items = sel.xpath('.//tr')[1:]
+            list_items = response.xpath('.//tr')[1:]
             for it in list_items:
                 data = it.select('td')
                 if len(data) > 4:
