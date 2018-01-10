@@ -9,13 +9,20 @@ from scrapy.http import Request
 
 import re
 import html2text as h2t
-from ..items import TripadvisorItem
+from ..items import (
+    TripadvisorForumItem,
+    TripadvisorTopicItem,
+)
 import datetime
 from dateutil import parser
-ORIGIN_DOMAIN = 'https://www.tripadvisor.com'
 import logging  
-
+import re 
 logger = logging.getLogger()
+
+ORIGIN_DOMAIN = 'https://www.tripadvisor.com'
+REGEX_ID = re.compile('g\d+-i\d+-(k\d+)?', re.IGNORECASE | re.MULTILINE)
+
+# re.sub(r'(i|k|g)','', r.search(x).group()).stri
 
 class TripSpider(CrawlSpider):
     name            = "TripSpider"
@@ -36,6 +43,7 @@ class TripSpider(CrawlSpider):
 	    Rule(
 	    	LinkExtractor(allow=(
 	    		r'ShowForum[-.?=\w\/]+.html',
+                r'ShowTopic[-.?=\w\/]+.html',
 	    	), deny=__queue,
                 restrict_xpaths=[
                     # r'//div[6]/section[1]/div/div/div/div[2]/div/div[3]',
@@ -46,7 +54,7 @@ class TripSpider(CrawlSpider):
                     # r'//div[6]/section[2]/div/div/div/div/div[1]/div[3]/div/div/div/div[4]/div',
                     # r'//div[6]/section[2]/div/div/div/div/div[1]/div[4]/div/div'
                 ]), 
-	    	    callback='parse_extract_data', follow=True
+	    	    callback='parse_extract_forum', follow=True
 	    	)
     ]
 
@@ -59,8 +67,13 @@ class TripSpider(CrawlSpider):
         except Exception as e:
             raise Exception("Invalid XPath: %s" % e)
     
+    def parse_extract_topic(self, response):
+        try:
+            pass
+        except Exception as e:
+            logger.warning(e)
     
-    def parse_extract_data(self, response):
+    def parse_extract_forum(self, response):
         try:
             sel = response
             list_items = sel.xpath('.//tr')[1:]
@@ -68,12 +81,14 @@ class TripSpider(CrawlSpider):
                 data = it.select('td')
                 if len(data) > 4:
                     data = data[1:]
-                item = TripadvisorItem()
+                item = TripadvisorForumItem()
                 item['url'] = response.url
                 item['forum'] = data[0].select('text()').get().strip()
+                item['forum_id'] = re.sub(r'(i|k|g)','', REGEX_ID.search(response.url).group()).strip('-')
                 url = data[0].select('td')[1].select('a/@href').get().strip() if len(data[0].select('td')) > 0 else None
                 item['forum_url'] = f'{ORIGIN_DOMAIN}{url}' if url else None
                 item['topic_url'] = f"{ORIGIN_DOMAIN}{data[1].select('.//a')[0].select('@href').get()}"
+                item['topic_id'] = re.sub(r'(i|k|g)','', REGEX_ID.search(item['topic_url']).group()).strip('-')
                 # yield Request(
                 #     url=f"{ORIGIN_DOMAIN}{data[1].select('.//a')[0].select('@href').get()}",
                 #     callback = self.parse_data,priority=1000
