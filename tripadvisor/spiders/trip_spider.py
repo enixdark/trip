@@ -13,6 +13,9 @@ from ..items import TripadvisorItem
 import datetime
 from dateutil import parser
 ORIGIN_DOMAIN = 'https://www.tripadvisor.com'
+import logging  
+
+logger = logging.getLogger()
 
 class TripSpider(CrawlSpider):
     name            = "TripSpider"
@@ -24,6 +27,8 @@ class TripSpider(CrawlSpider):
     
 
     __queue = [
+        'https://www.tripadvisor.com/ShowTopic-g293921-i8432-k11082870-PLEASE_READ_Forum_Guidelines_Updated-Vietnam.html'
+        r'ShowTopic[-.?=\w\/]+.html'
 	]
     
     
@@ -56,33 +61,41 @@ class TripSpider(CrawlSpider):
     
     
     def parse_extract_data(self, response):
-        items = []
-        import ipdb; ipdb.set_trace()
         try:
             sel = response
             list_items = sel.xpath('.//tr')[1:]
             for it in list_items:
                 data = it.select('td')
                 if len(data) > 4:
-                    data.pop(0)
+                    data = data[1:]
                 item = TripadvisorItem()
                 item['url'] = response.url
-                item['forum'] = data[0].select('text()').get()
-                url = data[0].select('td')[1].select('a/@href').get()
+                item['forum'] = data[0].select('text()').get().strip()
+                url = data[0].select('td')[1].select('a/@href').get().strip() if len(data[0].select('td')) > 0 else None
                 item['forum_url'] = f'{ORIGIN_DOMAIN}{url}' if url else None
-                item['topic_url'] = f"{ORIGIN_DOMAIN}{data.select('td')[2].select('.//a')[0].select('@href').get()}"
-                item['topic'] = data.select('td')[2].select('.//a/text()')[0].get()
-                item['created_by'] = data.select('td')[2].select('.//a/text()')[1].get()
-                item['replies'] = data.select('td')[3].select('text()').get()
-                time = data.select('td')[4].select('.//a/text()')[0].get()
+                item['topic_url'] = f"{ORIGIN_DOMAIN}{data[1].select('.//a')[0].select('@href').get()}"
+                # yield Request(
+                #     url=f"{ORIGIN_DOMAIN}{data[1].select('.//a')[0].select('@href').get()}",
+                #     callback = self.parse_data,priority=1000
+                # )
+                item['topic'] = data[1].select('.//a/text()')[0].get().strip()
+                item['created_by'] = data[1].select('.//a/text()')[1].get().strip()
+                item['replies'] = data[2].select('text()').get().strip()
+                time = data[3].select('.//text()')[0].extract().strip()
                 if time == 'yesterday':
                     time = datetime.datetime.now() - datetime.timedelta(days=1)
                 else:
-                    time = parser.parse(time)
+                    try:
+                        time = parser.parse(time)
+                    except:
+                        time = data[3].select('.//text()')[1].extract().strip()
+                        time = parser.parse(time)
+                    
                 item['updated_at'] = time
-                item['last_post_by'] = data.select('td')[4].select('.//a/text()')[0].get()
-                items.append(item)
-        except:
-            pass
-        
-        return items
+                try:
+                    item['last_post_by'] =  data[3].select('.//a/text()')[1].get().strip()
+                except:
+                    item['last_post_by'] =  data[3].select('.//a/text()')[0].get().strip()
+                yield item
+        except Exception as e:
+            logger.warning(e)

@@ -22,7 +22,7 @@ class TripadvisorPipeline(object):
         data = dict(item)
         
         if data['url'] not in LSMEngine.db:
-            LSMEngine.db['url'] = '1'
+            LSMEngine.db[data['url']] = True
             self.collection.insert(data)
         
         return item
